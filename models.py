@@ -35,14 +35,18 @@ class Cart:
         get_items(): Return a list of all CartItem objects in the cart.
         is_empty(): Check if the cart has no items.
     """
+
     def __init__(self):
         self.items = {}  # Using dict with book title as key for easy lookup
 
-    def add_book(self, book, quantity=1):
-        if book.title in self.items:
-            self.items[book.title].quantity += quantity
+    def add_book(self, book, quantity):
+        if not isinstance(book, Book):
+            return  # Safety check
+        title = book.title
+        if title in self.items:
+            self.items[title].quantity += quantity
         else:
-            self.items[book.title] = CartItem(book, quantity)
+            self.items[title] = CartItem(book, quantity)
 
     def remove_book(self, book_title):
         if book_title in self.items:
@@ -65,7 +69,7 @@ class Cart:
         self.items = {}
 
     def get_items(self):
-        return list(self.items.values())
+        return list(self.items.values())  # Convert dict values to list of CartItem objects
 
     def is_empty(self):
         return len(self.items) == 0
