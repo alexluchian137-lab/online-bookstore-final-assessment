@@ -10,3 +10,5 @@ jobs:
           python-version: '3.13'
       - run: pip install -r requirements.txt
       - run: pytest --cov=. -v
+      - run: pytest --cov=. -v
+        continue-on-error: true
