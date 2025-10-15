@@ -43,4 +43,5 @@ def test_get_total_price_performance(client):
 
 def test_get_total_price_profile(client):
     from app import cart
-    cart.add_book(app.BOOKS[0], 1000)
+    cart.add_book(app.BOOKS[0], 1000)  # Day 2 CI/CD triggered
+
