@@ -30,3 +30,17 @@ def test_update_negative_quantity(client):
     assert response.status_code == 200
     assert b'Removed' in response.data
     assert client.application.cart.is_empty()  #Bug 1 documentation
+
+import timeit
+import app
+
+def test_get_total_price_performance(client):
+    cart = client.application.cart
+    cart.add_book(app.BOOKS[0], 1000)
+    time = timeit.timeit(lambda: cart.get_total_price(), number=1000)
+    print(f"Time for get_total_price: {time} seconds")
+    assert time < 0.1
+
+def test_get_total_price_profile(client):
+    from app import cart
+    cart.add_book(app.BOOKS[0], 1000)
