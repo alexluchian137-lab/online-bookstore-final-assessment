@@ -214,3 +214,5 @@ Students should be able to:
   - **Conclusion:** Despite these efforts, the cart remained empty (`Cart items: []`), suggesting the issue may lie in `models.py`’s `Cart.add_book` method or a deeper initialization problem with `app.cart`. Due to time constraints and the complexity of tracing the global state across modules, resolution was deferred to a future iteration.
   - **Techniques Used:** Debugging with print statements, scope verification with global references, and test isolation with cleanup, as recommended by Sommerville (2015) for systematic issue identification [Ref book ID: 11].
   - **Reference:** Sommerville, I. (2015). *Software Engineering* (10th ed.). Pearson. [Ref book ID: 11]
+
+

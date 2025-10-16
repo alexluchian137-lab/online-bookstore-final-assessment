@@ -69,7 +69,6 @@ def test_remove_from_cart(mock_remove_app):
     response = mock_remove_app.post('/remove-from-cart', data={'title': 'The Great Gatsby'}, follow_redirects=True)
     assert response.status_code == 200
     assert b'Removed The Great Gatsby' in response.data
-    # assert app.app.cart.is_empty()  # Comment out
 
 def test_checkout_with_items(client):
     client.post('/add_to_cart', data={'title': 'The Great Gatsby', 'quantity': '1'}, follow_redirects=True)
@@ -135,13 +134,10 @@ def test_payment_with_paypal(client):
         'zip_code': '12345', 'payment_method': 'paypal', 'card_number': '', 'expiry_date': '', 'cvv': ''},
         follow_redirects=True)
     assert response.status_code == 200
-    print(f"Response data: {response.data}")  # Debug output
     soup = BeautifulSoup(response.data, 'html.parser')
     flash_messages = soup.find_all('div', {'class': 'flash-message'})
-    for message in flash_messages:
-        print(f"Flash message: {message.text}")  # Debug each message
-    assert any('payment' in str(message.text).lower() and 'successful' in str(message.text).lower()
-              for message in flash_messages if message.text)  # Partial match
+    print(f"Flash messages: {[message.text for message in flash_messages if message.text]}")  # Debug
+    assert any('payment successful' in str(message.text).lower() for message in flash_messages if message.text)  # Case-insensitive check
 
 def test_case_insensitive_discount_code(client):
     client.post('/add_to_cart', data={'title': 'The Great Gatsby', 'quantity': '1'}, follow_redirects=True)
@@ -159,3 +155,18 @@ def test_invalid_email_registration(client):
     response = client.post('/register', data={'email': 'invalid.email', 'password': 'testpass', 'name': 'Test User'}, follow_redirects=True)
     assert response.status_code == 200
     assert b'Invalid email format!' in response.data
+
+def test_order_initialization(client):
+    from models import Order, CartItem
+    book = app.BOOKS[0]  # Use first book
+    items = [CartItem(book, 2)]  # Create CartItem instance
+    shipping_info = {'name': 'Test User', 'email': 'test@bookstore.com', 'address': 'Test St', 'city': 'Test City', 'zip_code': '12345'}
+    payment_info = {'method': 'credit_card', 'transaction_id': '12345678'}
+    order = Order('ORDER123', 'test@bookstore.com', items, shipping_info, payment_info, 21.98)
+    print(f"Order created: {order.__dict__}")  # Debug all attributes
+    assert order.order_id == 'ORDER123'
+    assert order.user_email == 'test@bookstore.com'
+    assert order.items == items
+    assert order.total_amount == 21.98  # Adjust if based on book price
+    assert order.status == 'Confirmed'
+

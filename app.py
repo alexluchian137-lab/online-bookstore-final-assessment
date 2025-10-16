@@ -76,6 +76,7 @@ def add_to_cart():
         flash('Book not found or invalid quantity!', 'error')
     return redirect(url_for('index'))
 
+
 @app.route('/remove-from-cart', methods=['POST'])
 def remove_from_cart():
     book_title = request.form.get('title')
@@ -154,7 +155,10 @@ def process_checkout():
 
     discount_code = request.form.get('discount_code', '').upper()  # Normalize to uppercase
 
-    # Set initial flash based on discount
+    # Calculate total with discount
+    total_amount = cart.get_total_price()
+    discount_applied = 0
+
     if discount_code == 'SAVE10':
         discount_applied = total_amount * 0.10
         total_amount -= discount_applied
@@ -165,12 +169,6 @@ def process_checkout():
         flash(f'Welcome discount applied! You saved ${discount_applied:.2f}', 'success')
     elif discount_code:
         flash('Invalid discount code', 'error')
-    else:
-        flash('No discount applied.', 'success')  # Default flash
-
-    # Calculate total with discount
-    total_amount = cart.get_total_price()
-    discount_applied = 0  # Reset for calculation if needed
 
     required_fields = ['name', 'email', 'address', 'city', 'zip_code']
     for field in required_fields:
@@ -182,17 +180,14 @@ def process_checkout():
         if not all([payment_info.get('card_number'), payment_info.get('expiry_date'), payment_info.get('cvv')]):
             flash('Please fill in all credit card details', 'error')
             return redirect(url_for('checkout'))
-        # Basic card number validation (e.g., length 16)
         if not (len(payment_info['card_number']) == 16 and payment_info['card_number'].isdigit()):
-            flash('Invalid card number format!', 'error')
+            flash('Invalid card number! Must be 16 digits.', 'error')
             return redirect(url_for('checkout'))
-        # Basic expiry date validation (e.g., MM/YY format)
         if not re.match(r'^\d{2}/\d{2}$', payment_info['expiry_date']):
-            flash('Invalid expiry date format! Use MM/YY.', 'error')
+            flash('Invalid expiry date! Use MM/YY.', 'error')
             return redirect(url_for('checkout'))
-        # Basic CVV validation (e.g., 3-4 digits)
         if not (payment_info['cvv'].isdigit() and 3 <= len(payment_info['cvv']) <= 4):
-            flash('Invalid CVV format!', 'error')
+            flash('Invalid CVV! Must be 3-4 digits.', 'error')
             return redirect(url_for('checkout'))
     elif payment_info['payment_method'] == 'paypal':
         if not payment_info.get('email') or not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', payment_info.get('email')):
@@ -205,6 +200,10 @@ def process_checkout():
     if not payment_result['success']:
         flash(payment_result['message'], 'error')
         return redirect(url_for('checkout'))
+
+    # Add specific flash for PayPal success before order creation
+    if payment_info['payment_method'] == 'paypal' and payment_result['success']:
+        flash('Payment successful via PayPal!', 'success')
 
     # Create order
     order_id = str(uuid.uuid4())[:8].upper()
