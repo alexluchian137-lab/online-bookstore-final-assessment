@@ -203,3 +203,14 @@ Students should be able to:
 ---
 
 *This application serves as an excellent foundation for software testing education, providing realistic scenarios and challenges that mirror real-world development issues.*
+
+- **Bug #2 (Potential Cart Update Issue):**
+  - **Description:** The test case `test_add_to_cart` in `test_app.py` consistently fails with the assertion `assert 0 > 0`, indicating that the cart is not updating as expected when adding a book (e.g., "1984" with quantity 2). This suggests a potential issue with the cart management logic, possibly related to the scope or initialization of the global `app.cart` instance.
+  - **Attempts to Resolve:** On October 16, 2025, several techniques were employed to diagnose and resolve the issue:
+    - **Debugging with Print Statements:** Added `print` statements to log the response status and cart items (`Cart items: {items}`) to trace the execution flow and verify the cart state post-addition.
+    - **Explicit Global Reference:** Modified the test to use `global_cart = app.cart` and included a check (`if not items`) to debug the cart’s update status, ensuring the correct instance was accessed.
+    - **Scope Adjustment:** Updated `app.py`’s `add_to_cart` function to explicitly use `app.cart.add_book(book, quantity)` to ensure the global cart instance was modified, addressing potential scope mismatches.
+    - **Cleanup Mechanism:** Implemented `global_cart.clear()` to prevent state carryover, ensuring test isolation.
+  - **Conclusion:** Despite these efforts, the cart remained empty (`Cart items: []`), suggesting the issue may lie in `models.py`’s `Cart.add_book` method or a deeper initialization problem with `app.cart`. Due to time constraints and the complexity of tracing the global state across modules, resolution was deferred to a future iteration.
+  - **Techniques Used:** Debugging with print statements, scope verification with global references, and test isolation with cleanup, as recommended by Sommerville (2015) for systematic issue identification [Ref book ID: 11].
+  - **Reference:** Sommerville, I. (2015). *Software Engineering* (10th ed.). Pearson. [Ref book ID: 11]
