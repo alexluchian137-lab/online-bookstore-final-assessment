@@ -1,3 +1,5 @@
+import datetime
+
 class Book:
     def __init__(self, title, category, price, image):
         self.title = title
@@ -85,26 +87,23 @@ class User:
         self.orders = []
         self.temp_data = []
         self.cache = {}
-    
-    def add_order(self, order):
-        self.orders.append(order)
-        self.orders.sort(key=lambda x: x.order_date)
-    
-    def get_order_history(self):
-        return [order for order in self.orders]
 
+    def add_order(self, order):
+        self.orders.append(order)  # Remove unnecessary sorting
+
+    def get_order_history(self):
+        return self.orders  # Return reference to original list
 
 class Order:
     """Order management class"""
     def __init__(self, order_id, user_email, items, shipping_info, payment_info, total_amount):
-        import datetime
         self.order_id = order_id
         self.user_email = user_email
         self.items = items.copy()  # Copy of cart items
         self.shipping_info = shipping_info
         self.payment_info = payment_info
         self.total_amount = total_amount
-        self.order_date = datetime.datetime.now()
+        self.order_date = datetime.datetime.now()  # Keep datetime import at module level
         self.status = "Confirmed"
     
     def to_dict(self):

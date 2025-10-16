@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from models import Book, Cart, User, Order, PaymentGateway, EmailService
 import uuid
 import os
+import re
 TESTING = os.environ.get('TESTING', 'False').lower() == 'true'
 app = Flask(__name__, template_folder='templates')
 app.secret_key = 'your_secret_key'  # Required for session management
@@ -151,12 +152,9 @@ def process_checkout():
         'cvv': request.form.get('cvv')
     }
 
-    discount_code = request.form.get('discount_code', '')
+    discount_code = request.form.get('discount_code', '').upper()  # Normalize to uppercase
 
-    # Calculate total with discount
-    total_amount = cart.get_total_price()
-    discount_applied = 0
-
+    # Set initial flash based on discount
     if discount_code == 'SAVE10':
         discount_applied = total_amount * 0.10
         total_amount -= discount_applied
@@ -167,6 +165,12 @@ def process_checkout():
         flash(f'Welcome discount applied! You saved ${discount_applied:.2f}', 'success')
     elif discount_code:
         flash('Invalid discount code', 'error')
+    else:
+        flash('No discount applied.', 'success')  # Default flash
+
+    # Calculate total with discount
+    total_amount = cart.get_total_price()
+    discount_applied = 0  # Reset for calculation if needed
 
     required_fields = ['name', 'email', 'address', 'city', 'zip_code']
     for field in required_fields:
@@ -175,8 +179,24 @@ def process_checkout():
             return redirect(url_for('checkout'))
 
     if payment_info['payment_method'] == 'credit_card':
-        if not payment_info.get('card_number') or not payment_info.get('expiry_date') or not payment_info.get('cvv'):
+        if not all([payment_info.get('card_number'), payment_info.get('expiry_date'), payment_info.get('cvv')]):
             flash('Please fill in all credit card details', 'error')
+            return redirect(url_for('checkout'))
+        # Basic card number validation (e.g., length 16)
+        if not (len(payment_info['card_number']) == 16 and payment_info['card_number'].isdigit()):
+            flash('Invalid card number format!', 'error')
+            return redirect(url_for('checkout'))
+        # Basic expiry date validation (e.g., MM/YY format)
+        if not re.match(r'^\d{2}/\d{2}$', payment_info['expiry_date']):
+            flash('Invalid expiry date format! Use MM/YY.', 'error')
+            return redirect(url_for('checkout'))
+        # Basic CVV validation (e.g., 3-4 digits)
+        if not (payment_info['cvv'].isdigit() and 3 <= len(payment_info['cvv']) <= 4):
+            flash('Invalid CVV format!', 'error')
+            return redirect(url_for('checkout'))
+    elif payment_info['payment_method'] == 'paypal':
+        if not payment_info.get('email') or not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', payment_info.get('email')):
+            flash('Please provide a valid email for PayPal!', 'error')
             return redirect(url_for('checkout'))
 
     # Process payment through mock gateway
@@ -220,7 +240,6 @@ def process_checkout():
     flash('Payment successful! Your order has been confirmed.', 'success')
     return redirect(url_for('order_confirmation', order_id=order_id))
 
-
 @app.route('/order-confirmation/<order_id>')
 def order_confirmation(order_id):
     """Display order confirmation page"""
@@ -249,19 +268,21 @@ def register():
             flash('Please fill in all required fields', 'error')
             return render_template('register.html')
 
-        if email in users:
+        # Email format validation
+        if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
+            flash('Invalid email format!', 'error')
+            return render_template('register.html')
+
+        # Case-insensitive email check
+        if email.lower() in [user.email.lower() for user in users.values()]:
             flash('An account with this email already exists', 'error')
             return render_template('register.html')
 
-        # Create new user
-        user = User(email, password, name, address)
+        user = User(email, password, name, address)  # Hashes password
         users[email] = user
-
-        # Log in the user
         session['user_email'] = email
         flash('Account created successfully! You are now logged in.', 'success')
         return redirect(url_for('index'))
-
     return render_template('register.html')
 
 

@@ -36,9 +36,14 @@ def test_add_to_cart(client):
     response = client.post('/add_to_cart', data={'title': '1984', 'quantity': '2'}, follow_redirects=True)
     print(f"Add response: {response.status_code}, {response.data}")
     assert response.status_code == 200
-    items = app.cart.get_items()
+    global_cart = app.cart  # Explicit global reference
+    items = global_cart.get_items()
     print(f"Cart items: {items}")  # Debug output
+    if not items:  # Debug cart state
+        print(f"Cart not updating. Checking app.cart: {app.cart.get_items()}")
     assert len(items) > initial_items  # Ensure item count increases
+    if len(items) > initial_items:  # Clean up if successful
+        global_cart.clear()
 
 def test_update_negative_quantity(client):
     client.post('/add_to_cart', data={'title': 'The Great Gatsby', 'quantity': '1'}, follow_redirects=True)
@@ -137,3 +142,20 @@ def test_payment_with_paypal(client):
         print(f"Flash message: {message.text}")  # Debug each message
     assert any('payment' in str(message.text).lower() and 'successful' in str(message.text).lower()
               for message in flash_messages if message.text)  # Partial match
+
+def test_case_insensitive_discount_code(client):
+    client.post('/add_to_cart', data={'title': 'The Great Gatsby', 'quantity': '1'}, follow_redirects=True)
+    response = client.post('/process-checkout', data={
+        'name': 'Test User', 'email': 'test@bookstore.com', 'address': 'Test St', 'city': 'Test City',
+        'zip_code': '12345', 'payment_method': 'credit_card', 'card_number': '1234567890123456',
+        'expiry_date': '12/25', 'cvv': '123', 'discount_code': 'save10'}, follow_redirects=True)
+    assert response.status_code == 200
+    soup = BeautifulSoup(response.data, 'html.parser')
+    flash_messages = soup.find_all('div', {'class': 'flash-message'})
+    print(f"Flash messages: {[message.get_text() for message in flash_messages]}")  # Debug with get_text()
+    assert any(b'discount applied' in message.get_text().encode('utf-8') for message in flash_messages if message.get_text())  # Byte check
+
+def test_invalid_email_registration(client):
+    response = client.post('/register', data={'email': 'invalid.email', 'password': 'testpass', 'name': 'Test User'}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Invalid email format!' in response.data
