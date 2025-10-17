@@ -32,17 +32,17 @@ def test_empty_catalog(client, monkeypatch):
     assert b'<div class="book-list">' not in response.data or b'No books' in response.data
 
 def test_add_to_cart(client):
-    initial_items = len(app.cart.get_items())  # Use global cart
+    initial_items = len(app.cart.get_items())
     response = client.post('/add_to_cart', data={'title': '1984', 'quantity': '2'}, follow_redirects=True)
     print(f"Add response: {response.status_code}, {response.data}")
     assert response.status_code == 200
-    global_cart = app.cart  # Explicit global reference
+    global_cart = app.cart
     items = global_cart.get_items()
-    print(f"Cart items: {items}")  # Debug output
-    if not items:  # Debug cart state
+    print(f"Cart items: {items}")
+    if not items:
         print(f"Cart not updating. Checking app.cart: {app.cart.get_items()}")
-    assert len(items) > initial_items  # Ensure item count increases
-    if len(items) > initial_items:  # Clean up if successful
+    assert len(items) > initial_items
+    if len(items) > initial_items:
         global_cart.clear()
 
 def test_update_negative_quantity(client):
@@ -99,7 +99,7 @@ def test_order_confirmation(client):
         'zip_code': '12345', 'payment_method': 'credit_card', 'card_number': '1234567890123456',
         'expiry_date': '12/25', 'cvv': '123'}, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Payment successful!' in response.data or b'confirmed' in response.data.lower()  # Broadened assert
+    assert b'Payment successful!' in response.data or b'confirmed' in response.data.lower()
 
 def test_update_profile(client):
     client.post('/login', data={'email': 'demo@bookstore.com', 'password': 'demo123'}, follow_redirects=True)
@@ -136,8 +136,8 @@ def test_payment_with_paypal(client):
     assert response.status_code == 200
     soup = BeautifulSoup(response.data, 'html.parser')
     flash_messages = soup.find_all('div', {'class': 'flash-message'})
-    print(f"Flash messages: {[message.text for message in flash_messages if message.text]}")  # Debug
-    assert any('payment successful' in str(message.text).lower() for message in flash_messages if message.text)  # Case-insensitive check
+    print(f"Flash messages: {[message.text for message in flash_messages if message.text]}")
+    assert any('payment successful' in str(message.text).lower() for message in flash_messages if message.text)
 
 def test_case_insensitive_discount_code(client):
     client.post('/add_to_cart', data={'title': 'The Great Gatsby', 'quantity': '1'}, follow_redirects=True)
@@ -148,7 +148,7 @@ def test_case_insensitive_discount_code(client):
     assert response.status_code == 200
     soup = BeautifulSoup(response.data, 'html.parser')
     flash_messages = soup.find_all('div', {'class': 'flash-message'})
-    print(f"Flash messages: {[message.get_text() for message in flash_messages]}")  # Debug with get_text()
+    print(f"Flash messages: {[message.get_text() for message in flash_messages]}")
     assert any(b'discount applied' in message.get_text().encode('utf-8') for message in flash_messages if message.get_text())  # Byte check
 
 def test_invalid_email_registration(client):
@@ -163,10 +163,9 @@ def test_order_initialization(client):
     shipping_info = {'name': 'Test User', 'email': 'test@bookstore.com', 'address': 'Test St', 'city': 'Test City', 'zip_code': '12345'}
     payment_info = {'method': 'credit_card', 'transaction_id': '12345678'}
     order = Order('ORDER123', 'test@bookstore.com', items, shipping_info, payment_info, 21.98)
-    print(f"Order created: {order.__dict__}")  # Debug all attributes
+    print(f"Order created: {order.__dict__}")
     assert order.order_id == 'ORDER123'
     assert order.user_email == 'test@bookstore.com'
     assert order.items == items
-    assert order.total_amount == 21.98  # Adjust if based on book price
+    assert order.total_amount == 21.98
     assert order.status == 'Confirmed'
-
