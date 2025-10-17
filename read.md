@@ -23,6 +23,13 @@
 - `werkzeug`: Security utilities.
 - Other potential dependencies in `requirements.txt` (e.g., `flask-wtf` for forms).
 
+## Running the Tests
+
+### Test Suite Overview
+- Located in `tests/test_app.py` with 20 test cases.
+- Current coverage: 86% (app.py: 74%, models.py: 89%, test_app.py: 99%, tests/conftest.py: 100%, tests/__init__.py: 100%).
+- Tests are executed using pytest with a client fixture from `tests/conftest.py`. The `tests/__init__.py` file is empty, marking the directory as a package without additional initialization.
+
 ## Installation Instructions
 
 ### 1. Clone the Repository
